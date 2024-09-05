@@ -30,13 +30,13 @@ public class ReadingsController : ControllerBase
     /// There are old device out there, and if they get a firmwareVersion 
     /// format error they will request a firmware update to another service.
     /// </remarks>
-    /// <param name="deviceSecret">A unique identifier on the device included in the header(x-device-shared-secret).</param>
     /// <param name="deviceReadingRequest">Sensor information and extra metadata from device.</param>
     [HttpPost("evaluate")]
     public ActionResult<IEnumerable<Alert>> EvaluateReading(
-        string deviceSecret,
         [FromBody] DeviceReadingRequest deviceReadingRequest)
     {
+        Request.Headers.TryGetValue("x-device-shared-secret", out var deviceSecret);
+        
         if (!_secretValidator.ValidateDeviceSecret(deviceSecret))
         {
             return Problem(
@@ -44,6 +44,8 @@ public class ReadingsController : ControllerBase
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        return Ok(_alertService.GetAlerts(deviceReadingRequest));
+        var alerts = _alertService.GetAlerts(deviceReadingRequest);
+
+        return Ok(alerts);
     }
 }
